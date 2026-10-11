@@ -30,5 +30,11 @@ export default {
   centerMapOnClick: 'Center map on clicked point',
   mapConnected: 'Connected to the selected map.',
   mapNotConnected: 'No map selected yet — choose one above.',
-  tosWarning: '⚠️ Embedding Street View alongside a third-party map may violate Google Maps Platform Terms of Service (§3.2.3 (e)). Use at your own risk.'
+  tosWarning: '⚠️ Embedding Street View alongside a third-party map may violate Google Maps Platform Terms of Service (§3.2.3 (e)). Use at your own risk.',
+  imagerySection: 'Street imagery',
+  imagerySource: 'Imagery source',
+  sourceGoogle: 'Google Street View',
+  sourceMapillary: 'Mapillary (no Google key needed)',
+  mapillaryToken: 'Mapillary access token',
+  mapillaryTokenHint: 'Get a free client token at'
 }

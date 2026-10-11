@@ -15,5 +15,9 @@ System.register([], function (_export) {return {execute: function () {_export({
   clearPoint: '清除点位',
   modeArcgisPopup: '地图上的弹窗（ArcGIS）',
   modeCustomPopup: '在微件中显示',
-  modeNewTab: '在新标签页中打开'
+  modeNewTab: '在新标签页中打开',
+  openMapillary: '在 Mapillary 中打开',
+  mapillaryLoading: '正在查找附近的 Mapillary 影像…',
+  mapillaryNotFound: '此点附近未找到 Mapillary 影像。',
+  mapillaryError: '无法加载 Mapillary 影像。请检查访问令牌。'
 })}}});

@@ -11,5 +11,11 @@ System.register([], function (_export) {return {execute: function () {_export({
   centerMapOnClick: 'Karte auf geklickten Punkt zentrieren',
   mapConnected: 'Mit der ausgewählten Karte verbunden.',
   mapNotConnected: 'Noch keine Karte ausgewählt – wählen Sie oben eine aus.',
-  tosWarning: '⚠️ Das Einbetten von Street View neben einer Drittanbieter-Karte kann gegen die Google Maps Platform Nutzungsbedingungen (§3.2.3 (e)) verstoßen. Nutzung auf eigene Gefahr.'
+  tosWarning: '⚠️ Das Einbetten von Street View neben einer Drittanbieter-Karte kann gegen die Google Maps Platform Nutzungsbedingungen (§3.2.3 (e)) verstoßen. Nutzung auf eigene Gefahr.',
+  imagerySection: 'Straßenbilder',
+  imagerySource: 'Bildquelle',
+  sourceGoogle: 'Google Street View',
+  sourceMapillary: 'Mapillary (kein Google-Schlüssel nötig)',
+  mapillaryToken: 'Mapillary-Zugriffstoken',
+  mapillaryTokenHint: 'Kostenloses Client-Token erhalten unter'
 })}}});

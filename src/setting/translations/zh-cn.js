@@ -11,5 +11,11 @@ System.register([], function (_export) {return {execute: function () {_export({
   centerMapOnClick: '将地图居中到点击位置',
   mapConnected: '已连接到所选地图。',
   mapNotConnected: '尚未选择地图，请在上方选择。',
-  tosWarning: '⚠️ 在第三方地图旁嵌入 Street View 可能违反 Google Maps Platform 服务条款（§3.2.3 (e)）。使用风险自负。'
+  tosWarning: '⚠️ 在第三方地图旁嵌入 Street View 可能违反 Google Maps Platform 服务条款（§3.2.3 (e)）。使用风险自负。',
+  imagerySection: '街景影像',
+  imagerySource: '影像来源',
+  sourceGoogle: 'Google 街景',
+  sourceMapillary: 'Mapillary（无需 Google 密钥）',
+  mapillaryToken: 'Mapillary 访问令牌',
+  mapillaryTokenHint: '免费获取客户端令牌：'
 })}}});

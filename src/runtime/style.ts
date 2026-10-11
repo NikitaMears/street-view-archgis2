@@ -128,6 +128,12 @@ export const getStyle = () => {
       flex-wrap: wrap;
     }
 
+    .widget-street-view__message {
+      flex: 0 0 auto;
+      font-size: 12px;
+      color: #666;
+    }
+
     .widget-street-view__map-connection {
       position: absolute;
       width: 0;

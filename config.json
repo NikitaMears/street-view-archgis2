@@ -1,6 +1,8 @@
 {
   "widgetTitle": "",
+  "imagerySource": "google",
   "googleEmbedApiKey": "",
+  "mapillaryAccessToken": "",
   "openMode": "custom-popup",
   "centerMapOnClick": true
 }

@@ -34,5 +34,9 @@ export default {
   clearPoint: 'Clear point',
   modeArcgisPopup: 'Popup on the map (ArcGIS)',
   modeCustomPopup: 'Show inside the widget',
-  modeNewTab: 'Open in a new tab'
+  modeNewTab: 'Open in a new tab',
+  openMapillary: 'Open in Mapillary',
+  mapillaryLoading: 'Looking for nearby Mapillary imagery…',
+  mapillaryNotFound: 'No Mapillary imagery found near this point.',
+  mapillaryError: 'Could not load Mapillary imagery. Check the access token.'
 }

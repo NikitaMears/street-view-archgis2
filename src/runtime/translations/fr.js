@@ -15,5 +15,9 @@ System.register([], function (_export) {return {execute: function () {_export({
   clearPoint: 'Effacer le point',
   modeArcgisPopup: 'Fenêtre contextuelle sur la carte (ArcGIS)',
   modeCustomPopup: 'Afficher dans le widget',
-  modeNewTab: 'Ouvrir dans un nouvel onglet'
+  modeNewTab: 'Ouvrir dans un nouvel onglet',
+  openMapillary: 'Ouvrir dans Mapillary',
+  mapillaryLoading: 'Recherche d\'images Mapillary à proximité…',
+  mapillaryNotFound: 'Aucune image Mapillary trouvée près de ce point.',
+  mapillaryError: 'Impossible de charger les images Mapillary. Vérifiez le jeton d\'accès.'
 })}}});

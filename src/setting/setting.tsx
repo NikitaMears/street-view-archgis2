@@ -2,7 +2,7 @@
 import { React, jsx, type IntlShape } from 'jimu-core'
 import type { AllWidgetSettingProps } from 'jimu-for-builder'
 import { SettingSection, SettingRow, MapWidgetSelector } from 'jimu-ui/advanced/setting-components'
-import type { Config, IMConfig, OpenMode } from '../config'
+import type { Config, IMConfig, ImagerySource, OpenMode } from '../config'
 import defaultMessages from './translations/default'
 
 const BRAND_COLOR = '#003865'
@@ -15,6 +15,7 @@ const styles: Record<string, React.CSSProperties> = {
   field: { width: 'calc(100% - 16px)', maxWidth: '260px' },
   fullWidth: { width: '100%' },
   mapStatus: { marginTop: 6, fontSize: '12px', fontWeight: 600 },
+  hint: { marginTop: 6, fontSize: '11px', color: '#666', lineHeight: '1.4' },
   tosWarning: {
     fontSize: '11px',
     color: WARNING_COLOR,
@@ -43,7 +44,9 @@ export default class Setting extends React.PureComponent<AllWidgetSettingProps<I
   onTitleChange = (evt: React.ChangeEvent<HTMLInputElement>) => { this.setConfig('widgetTitle', evt.currentTarget.value) }
   onModeChange = (evt: React.ChangeEvent<HTMLSelectElement>) => { this.setConfig('openMode', evt.currentTarget.value as OpenMode) }
   onCenterMapOnClickChange = (evt: React.ChangeEvent<HTMLInputElement>) => { this.setConfig('centerMapOnClick', evt.currentTarget.checked) }
+  onImagerySourceChange = (evt: React.ChangeEvent<HTMLSelectElement>) => { this.setConfig('imagerySource', evt.currentTarget.value as ImagerySource) }
   onApiKeyChange = (evt: React.ChangeEvent<HTMLInputElement>) => { this.setConfig('googleEmbedApiKey', evt.currentTarget.value) }
+  onMapillaryTokenChange = (evt: React.ChangeEvent<HTMLInputElement>) => { this.setConfig('mapillaryAccessToken', evt.currentTarget.value) }
 
   /** A labelled field inside its own setting row. */
   private renderField (label: string, content: React.ReactNode) {
@@ -59,6 +62,7 @@ export default class Setting extends React.PureComponent<AllWidgetSettingProps<I
 
   render () {
     const { config } = this.props
+    const imagerySource = config.imagerySource || 'google'
     const hasApiKey = Boolean(config.googleEmbedApiKey?.trim())
     const useMapWidgetIds = this.props.useMapWidgetIds ?? []
     const hasMapConnected = useMapWidgetIds.length > 0
@@ -99,19 +103,38 @@ export default class Setting extends React.PureComponent<AllWidgetSettingProps<I
           ))}
         </SettingSection>
 
-        <div style={styles.sectionTitle}>{this.nls('googleSection')}</div>
+        <div style={styles.sectionTitle}>{this.nls('imagerySection')}</div>
         <SettingSection>
-          {this.renderField(this.nls('apiKey'), (
+          {this.renderField(this.nls('imagerySource'), (
+            <select style={styles.fullWidth} value={imagerySource} onChange={this.onImagerySourceChange}>
+              <option value="google">{this.nls('sourceGoogle')}</option>
+              <option value="mapillary">{this.nls('sourceMapillary')}</option>
+            </select>
+          ))}
+
+          {imagerySource === 'google' && this.renderField(this.nls('apiKey'), (
             <input style={styles.fullWidth} value={config.googleEmbedApiKey || ''} onChange={this.onApiKeyChange} />
           ))}
 
-          {hasApiKey && (
+          {imagerySource === 'google' && hasApiKey && (
             <SettingRow>
               <div style={{ ...styles.field, ...styles.tosWarning }}>
                 {this.nls('tosWarning')}
               </div>
             </SettingRow>
           )}
+
+          {imagerySource === 'mapillary' && this.renderField(this.nls('mapillaryToken'), (
+            <React.Fragment>
+              <input style={styles.fullWidth} value={config.mapillaryAccessToken || ''} onChange={this.onMapillaryTokenChange} />
+              <div style={styles.hint}>
+                {this.nls('mapillaryTokenHint')}{' '}
+                <a href="https://www.mapillary.com/dashboard/developers" target="_blank" rel="noopener noreferrer">
+                  mapillary.com/dashboard/developers
+                </a>
+              </div>
+            </React.Fragment>
+          ))}
         </SettingSection>
       </div>
     )
