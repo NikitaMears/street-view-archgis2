@@ -9,5 +9,7 @@ System.register([], function (_export) {return {execute: function () {_export({
   modeCustomPopup: '在微件中显示',
   modeNewTab: '在新标签页中打开',
   centerMapOnClick: '将地图居中到点击位置',
+  mapConnected: '已连接到所选地图。',
+  mapNotConnected: '尚未选择地图，请在上方选择。',
   tosWarning: '⚠️ 在第三方地图旁嵌入 Street View 可能违反 Google Maps Platform 服务条款（§3.2.3 (e)）。使用风险自负。'
 })}}});

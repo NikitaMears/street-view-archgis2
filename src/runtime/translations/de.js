@@ -1,6 +1,6 @@
 System.register([], function (_export) {return {execute: function () {_export({
-  _widgetLabel: 'Street View',
-  title: 'Street View',
+  _widgetLabel: 'MnDOT Street View',
+  title: 'MnDOT Street View',
   selectMap: 'Wählen Sie in den Widget-Einstellungen eine Karte aus.',
   clickMap: 'Klicken Sie auf die Karte, um Street View zu öffnen.',
   clickDisabled: 'Der Klick auf die Karte ist deaktiviert. Verwenden Sie die Schaltfläche, um ihn zu aktivieren.',

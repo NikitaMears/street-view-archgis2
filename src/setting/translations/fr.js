@@ -9,5 +9,7 @@ System.register([], function (_export) {return {execute: function () {_export({
   modeCustomPopup: 'Afficher dans le widget',
   modeNewTab: 'Ouvrir dans un nouvel onglet',
   centerMapOnClick: 'Centrer la carte sur le point cliqué',
+  mapConnected: 'Connecté à la carte sélectionnée.',
+  mapNotConnected: 'Aucune carte sélectionnée pour le moment : choisissez-en une ci-dessus.',
   tosWarning: '⚠️ L\'intégration de Street View avec une carte tierce peut violer les Conditions d\'utilisation de Google Maps Platform (§3.2.3 (e)). Utilisation à vos risques.'
 })}}});

@@ -1,10 +1,10 @@
 {
   "name": "streetView",
-  "label": "Street View",
+  "label": "MnDOT Street View",
   "type": "widget",
   "version": "1.0.1",
   "exbVersion": "1.20.0",
-  "author": "nicogis",
+  "author": "Minnesota Department of Transportation",
   "description": "Open Google Street View from a map click",
   "copyright": "",
   "license": "http://www.apache.org/licenses/LICENSE-2.0",

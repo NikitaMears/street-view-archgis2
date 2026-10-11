@@ -16,6 +16,30 @@ interface State {
   captureEnabled: boolean
 }
 
+const MARKER_SYMBOL = {
+  type: 'simple-marker',
+  style: 'circle',
+  color: [220, 53, 69, 0.95],
+  size: 12,
+  outline: { color: [255, 255, 255, 1], width: 2 }
+}
+
+const ignoreError = (): void => undefined
+
+const getStreetViewUrl = (lat: number, lon: number): string =>
+  `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(`${lat},${lon}`)}`
+
+const getEmbedUrl = (apiKey: string, lat: number, lon: number): string =>
+  `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(apiKey)}&location=${lat},${lon}`
+
+/** Converts a point to WGS84 (lat/lon). Returns null for unsupported spatial references. */
+const toWgs84 = (point: __esri.Point): __esri.Point | null => {
+  const sr = point?.spatialReference
+  if (sr?.isWGS84) return point
+  if (sr?.isWebMercator) return webMercatorUtils.webMercatorToGeographic(point) as __esri.Point
+  return null
+}
+
 export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>, State> {
   state: State = {
     customPopupOpen: false,
@@ -25,12 +49,19 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
   private jimuMapView: JimuMapView | null = null
   private clickHandle: { remove: () => void } | null = null
   private markerGraphic: Graphic | null = null
+  private markerView: __esri.View | null = null
 
-  nls = (id: keyof typeof defaultMessages): string => {
-      return this.props.intl.formatMessage({
-          id,
-          defaultMessage: defaultMessages[id]
-      })
+  // ---------- Lifecycle ----------
+
+  componentDidUpdate (prevProps: AllWidgetProps<IMConfig>): void {
+    if (prevProps.state === this.props.state) return
+
+    // Only listen for map clicks while the widget is open.
+    if (this.isWidgetOpened()) {
+      this.addClickHandler()
+    } else {
+      this.removeClickHandler()
+    }
   }
 
   componentWillUnmount (): void {
@@ -39,26 +70,49 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
     this.jimuMapView = null
   }
 
-  private readonly removeClickHandler = (): void => {
-    if (this.clickHandle) {
-      this.clickHandle.remove()
-      this.clickHandle = null
-    }
+  // ---------- Helpers ----------
+
+  nls = (id: keyof typeof defaultMessages): string => {
+    return this.props.intl.formatMessage({ id, defaultMessage: defaultMessages[id] })
   }
+
+  private get apiKey (): string | undefined {
+    return this.props.config.googleEmbedApiKey?.trim() || undefined
+  }
+
+  private get centerMapOnClick (): boolean {
+    return this.props.config.centerMapOnClick ?? true
+  }
+
+  private isWidgetOpened (): boolean {
+    return this.props.state == null || this.props.state === WidgetState.Opened
+  }
+
+  // ---------- Map click handling ----------
 
   private readonly onActiveViewChange = (jimuMapView: JimuMapView): void => {
     if (!jimuMapView?.view) return
 
-    if (this.jimuMapView?.view === jimuMapView.view) {
-      this.addClickHandler()
-      return
+    // Switching to a different map view: drop everything tied to the old one.
+    if (this.jimuMapView?.view !== jimuMapView.view) {
+      this.removeClickHandler()
+      this.clearCurrentPoint()
+      this.jimuMapView = jimuMapView
     }
 
-    this.removeClickHandler()
-    this.clearCurrentPoint()
-
-    this.jimuMapView = jimuMapView
     this.addClickHandler()
+  }
+
+  private addClickHandler (): void {
+    const view = this.jimuMapView?.view
+    if (!view || this.clickHandle || !this.isWidgetOpened()) return
+
+    this.clickHandle = view.on('click', this.onMapClick)
+  }
+
+  private removeClickHandler (): void {
+    this.clickHandle?.remove()
+    this.clickHandle = null
   }
 
   private readonly onMapClick = (event: __esri.ViewClickEvent): void => {
@@ -66,23 +120,19 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
     if (!view || !event.mapPoint || !this.state.captureEnabled || !this.isWidgetOpened()) return
 
     const clickedPoint = event.mapPoint.clone()
-    const wgs84Point = this.toWgs84(clickedPoint)
+    const wgs84Point = toWgs84(clickedPoint)
     if (!wgs84Point) return
 
     this.setMarker(clickedPoint)
 
-    if (this.props.config.centerMapOnClick ?? true) {
-      view.goTo(
-        { center: clickedPoint },
-        { animate: false }
-      ).catch(() => undefined)
+    if (this.centerMapOnClick) {
+      view.goTo({ center: clickedPoint }, { animate: false }).catch(ignoreError)
     }
 
     const lat = Number(wgs84Point.latitude.toFixed(6))
     const lon = Number(wgs84Point.longitude.toFixed(6))
-    const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(`${lat},${lon}`)}`
+    const streetViewUrl = getStreetViewUrl(lat, lon)
     const openMode = this.props.config.openMode || 'custom-popup'
-    const hasEmbed = Boolean(this.props.config.googleEmbedApiKey?.trim())
 
     this.setState({
       lat,
@@ -91,285 +141,139 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
       customPopupOpen: openMode === 'custom-popup'
     })
 
-    if (openMode === 'new-tab' || !hasEmbed) {
+    // Without an embed API key there is nothing to show inline, so open Google Maps.
+    if (openMode === 'new-tab' || !this.apiKey) {
       window.open(streetViewUrl, '_blank', 'noopener,noreferrer')
     }
   }
 
-  private toWgs84 (point: __esri.Point): __esri.Point | null {
-    if (!point?.spatialReference) return null
+  // ---------- Marker ----------
 
-    if (point.spatialReference.isWGS84) {
-      return point
-    }
-
-    if (point.spatialReference.isWebMercator) {
-      return webMercatorUtils.webMercatorToGeographic(point) as __esri.Point
-    }
-
-    return null
-  }
-
-  private readonly setMarker = (point: __esri.Point): void => {
+  private setMarker (point: __esri.Point): void {
     const view = this.jimuMapView?.view
     if (!view) return
 
-    // Rimuove sempre il vecchio graphic e ne crea uno nuovo:
-    // mutare .geometry direttamente non garantisce il redraw in EXB.
-    if (this.markerGraphic) {
-      view.graphics.remove(this.markerGraphic)
-      this.markerGraphic = null
-    }
+    // Always replace the graphic: mutating .geometry does not reliably redraw in EXB.
+    this.clearMarker()
 
-    this.markerGraphic = new Graphic({
-      geometry: point.clone(),
-      symbol: {
-        type: 'simple-marker',
-        style: 'circle',
-        color: [220, 53, 69, 0.95],
-        size: 12,
-        outline: {
-          color: [255, 255, 255, 1],
-          width: 2
-        }
-      } as any
-    })
-
+    this.markerGraphic = new Graphic({ geometry: point.clone(), symbol: MARKER_SYMBOL as any })
     view.graphics.add(this.markerGraphic)
+    this.markerView = view
 
-    // Micro-goTo al centro corrente: forza il renderer a ridisegnare
-    // senza spostare la mappa visivamente.
-      if (!(this.props.config.centerMapOnClick ?? true)) {
-      const center = view.center?.clone()
-      if (center) {
-          view.goTo({ center }, { animate: false }).catch(() => undefined)
-      }
+    // If the map won't be re-centered, "go to" the current center to force a redraw.
+    if (!this.centerMapOnClick && view.center) {
+      view.goTo({ center: view.center.clone() }, { animate: false }).catch(ignoreError)
     }
   }
 
-
-  private readonly clearMarker = (): void => {
-    const view = this.jimuMapView?.view
-
-    if (view && this.markerGraphic) {
-      view.graphics.remove(this.markerGraphic)
+  private clearMarker (): void {
+    if (this.markerView && this.markerGraphic) {
+      this.markerView.graphics.remove(this.markerGraphic)
     }
-
     this.markerGraphic = null
+    this.markerView = null
   }
 
-  private readonly refreshViewAfterClear = (): void => {
+  /** Nudges the map slightly and back again so the removed marker disappears. */
+  private forceRedraw (): void {
     const view = this.jimuMapView?.view
-    if (!view) return
-
-    const center = view.center?.clone()
-    if (!center) return
+    const center = view?.center?.clone()
+    if (!view || !center) return
 
     const dx = view.resolution ? view.resolution * 0.25 : 0.01
+    const nudged = { x: center.x + dx, y: center.y, spatialReference: center.spatialReference }
 
-    view.goTo(
-      {
-        center: {
-          x: center.x + dx,
-          y: center.y,
-          spatialReference: center.spatialReference
-        }
-      },
-      { animate: false }
-    ).then(() => {
-      view.goTo({ center }, { animate: false }).catch(() => undefined)
-    }).catch(() => undefined)
+    view.goTo({ center: nudged }, { animate: false })
+      .then(() => view.goTo({ center }, { animate: false }))
+      .catch(ignoreError)
   }
+
+  // ---------- Toolbar actions ----------
 
   private readonly clearCurrentPoint = (): void => {
     this.clearMarker()
-
     this.setState({
       lat: undefined,
       lon: undefined,
       streetViewUrl: undefined,
       customPopupOpen: false
-    }, () => {
-      this.refreshViewAfterClear()
-    })
+    }, () => { this.forceRedraw() })
   }
 
   private readonly toggleCapture = (): void => {
-    this.setState((prevState) => ({
-      captureEnabled: !prevState.captureEnabled
-    }))
+    this.setState((prev) => ({ captureEnabled: !prev.captureEnabled }))
   }
 
-  private renderCustomPopup () {
-    if (!this.state.customPopupOpen || this.state.lat == null || this.state.lon == null || !this.state.streetViewUrl) {
-      return null
-    }
+  // ---------- Rendering ----------
 
-    const apiKey = this.props.config.googleEmbedApiKey?.trim()
+  private getHint (hasMap: boolean): string {
+    if (!hasMap) return this.nls('selectMap')
+    return this.state.captureEnabled ? this.nls('clickMap') : this.nls('clickDisabled')
+  }
 
-    if (!apiKey) {
-      return (
-        <div className="widget-street-view__preview-area widget-street-view__preview-area--compact">
-          <div className="widget-street-view__preview widget-street-view__preview--compact">
-            <div className="widget-street-view__preview-body">
-              <div className="widget-street-view__preview-coords">
-                <strong>{this.nls('coords')}:</strong> {this.state.lat}, {this.state.lon}
-              </div>
-              <div className="widget-street-view__actions">
-                <a href={this.state.streetViewUrl} target="_blank" rel="noopener noreferrer">
-                  {this.nls('openStreetView')}
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    }
+  private renderPreview () {
+    const { customPopupOpen, lat, lon, streetViewUrl } = this.state
+    if (!customPopupOpen || lat == null || lon == null || streetViewUrl == null) return null
 
-    const embedUrl = `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(apiKey)}&location=${this.state.lat},${this.state.lon}`
+    const apiKey = this.apiKey
 
     return (
-      <div className="widget-street-view__preview-area widget-street-view__preview-area--embedded">
-        <div className="widget-street-view__preview widget-street-view__preview--embedded">
-          <div className="widget-street-view__preview-body">
-            <div className="widget-street-view__preview-coords">
-              <strong>{this.nls('coords')}:</strong> {this.state.lat}, {this.state.lon}
-            </div>
+      <div className="widget-street-view__preview-area">
+        <div className="widget-street-view__preview">
+          <div className="widget-street-view__preview-coords">
+            <strong>{this.nls('coords')}:</strong> {lat}, {lon}
+          </div>
+
+          {apiKey && (
             <div className="widget-street-view__iframe-wrapper">
               <iframe
                 className="widget-street-view__iframe"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                src={embedUrl}
+                src={getEmbedUrl(apiKey, lat, lon)}
               />
             </div>
-            <div className="widget-street-view__actions">
-              <a href={this.state.streetViewUrl} target="_blank" rel="noopener noreferrer">
-                {this.nls('openGoogleMaps')}
-              </a>
-            </div>
+          )}
+
+          <div className="widget-street-view__actions">
+            <a href={streetViewUrl} target="_blank" rel="noopener noreferrer">
+              {apiKey ? this.nls('openGoogleMaps') : this.nls('openStreetView')}
+            </a>
           </div>
         </div>
       </div>
     )
   }
 
-  private readonly getWidgetTitle = (): string => {
-    const configuredTitle = this.props.config.widgetTitle?.trim()
-    return configuredTitle || this.nls('title')
-  }
-
-  private readonly isWidgetOpened = (): boolean => {
-    return this.props.state == null || this.props.state === WidgetState.Opened
-  }
-
-  private readonly addClickHandler = (): void => {
-    const view = this.jimuMapView?.view
-
-    if (!view || this.clickHandle || !this.isWidgetOpened()) return
-
-    this.clickHandle = view.on('click', this.onMapClick)
-  }
-
-  componentDidUpdate (prevProps: AllWidgetProps<IMConfig>): void {
-    if (prevProps.state !== this.props.state) {
-      if (this.isWidgetOpened()) {
-        this.addClickHandler()
-      } else {
-        this.removeClickHandler()
-      }
-    }
-  }
-
   render () {
+    const { captureEnabled, lat } = this.state
     const hasMap = this.props.useMapWidgetIds?.length > 0
-    const hint = !hasMap
-      ? this.nls('selectMap')
-      : this.state.captureEnabled
-        ? this.nls('clickMap')
-        : this.nls('clickDisabled')
-
-    const apiKey = this.props.config.googleEmbedApiKey?.trim()
-    const { customPopupOpen, lat, lon, streetViewUrl } = this.state
-    const showPreview = customPopupOpen && lat != null && lon != null && streetViewUrl != null
-
-    const embedUrl = apiKey && showPreview
-      ? `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(apiKey)}&location=${lat},${lon}`
-      : null
+    const title = this.props.config.widgetTitle?.trim() || this.nls('title')
 
     return (
       <div className="widget-street-view jimu-widget" css={getStyle()}>
-
-        {/* Pannello principale: occupa tutto il widget con position absolute */}
         <div className="widget-street-view__panel">
-
-          {/* Header: titolo, hint, toolbar — flex: 0 0 auto */}
           <div className="widget-street-view__header">
-            <div className="widget-street-view__title">{this.getWidgetTitle()}</div>
-            <div className="widget-street-view__hint">{hint}</div>
+            <div className="widget-street-view__title">{title}</div>
+            <div className="widget-street-view__hint">{this.getHint(hasMap)}</div>
             <div className="widget-street-view__toolbar">
               <Button
                 size="sm"
-                type={this.state.captureEnabled ? 'primary' : 'default'}
+                type={captureEnabled ? 'primary' : 'default'}
                 onClick={this.toggleCapture}
               >
-                {this.state.captureEnabled ? this.nls('deactivateClick') : this.nls('activateClick')}
+                {captureEnabled ? this.nls('deactivateClick') : this.nls('activateClick')}
               </Button>
-              <Button
-                size="sm"
-                onClick={this.clearCurrentPoint}
-                disabled={lat == null}
-              >
+              <Button size="sm" onClick={this.clearCurrentPoint} disabled={lat == null}>
                 {this.nls('clearPoint')}
               </Button>
             </div>
           </div>
 
-          {/* Area preview: cresce per riempire il resto */}
-          {showPreview && (
-            <div className="widget-street-view__preview-area">
-              <div className="widget-street-view__preview">
-
-                {embedUrl
-                  ? (
-                  <>
-                    <div className="widget-street-view__preview-coords">
-                      <strong>{this.nls('coords')}:</strong> {lat}, {lon}
-                    </div>
-                    <div className="widget-street-view__iframe-wrapper">
-                      <iframe
-                        className="widget-street-view__iframe"
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        src={embedUrl}
-                      />
-                    </div>
-                    <div className="widget-street-view__actions">
-                      <a href={streetViewUrl} target="_blank" rel="noopener noreferrer">
-                        {this.nls('openGoogleMaps')}
-                      </a>
-                    </div>
-                  </>
-                    )
-                  : (
-                  <>
-                    <div className="widget-street-view__preview-coords">
-                      <strong>{this.nls('coords')}:</strong> {lat}, {lon}
-                    </div>
-                    <div className="widget-street-view__actions">
-                      <a href={streetViewUrl} target="_blank" rel="noopener noreferrer">
-                        {this.nls('openStreetView')}
-                      </a>
-                    </div>
-                  </>
-                    )}
-
-              </div>
-            </div>
-          )}
-
+          {this.renderPreview()}
         </div>
 
+        {/* Hidden: only used to connect to the selected map widget. */}
         {hasMap && (
           <div className="widget-street-view__map-connection">
             <JimuMapViewComponent

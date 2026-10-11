@@ -1,6 +1,6 @@
 System.register([], function (_export) {return {execute: function () {_export({
-  _widgetLabel: '街景',
-  title: '街景',
+  _widgetLabel: 'MnDOT 街景',
+  title: 'MnDOT 街景',
   selectMap: '请在微件设置中选择地图。',
   clickMap: '单击地图以打开街景。',
   clickDisabled: '地图单击已禁用。请使用按钮启用。',

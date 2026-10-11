@@ -1,7 +1,7 @@
 /**
   Licensing
 
-  Copyright 2020 nicogis
+  Copyright 2026 Minnesota Department of Transportation
 
   Licensed under the Apache License, Version 2.0 (the "License"); You
   may not use this file except in compliance with the License. You may
@@ -18,8 +18,8 @@
   LICENSE file.
 */
 export default {
-  _widgetLabel: 'Street View',
-  title: 'Street View',
+  _widgetLabel: 'MnDOT Street View',
+  title: 'MnDOT Street View',
   selectMap: 'Select a map in the widget settings.',
   clickMap: 'Click on the map to open Street View.',
   clickDisabled: 'Map click is disabled. Use the button to enable it.',

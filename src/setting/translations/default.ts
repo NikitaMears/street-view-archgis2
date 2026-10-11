@@ -1,7 +1,7 @@
 /**
   Licensing
 
-  Copyright 2020 nicogis
+  Copyright 2026 Minnesota Department of Transportation
 
   Licensed under the Apache License, Version 2.0 (the "License"); You
   may not use this file except in compliance with the License. You may
@@ -28,5 +28,7 @@ export default {
   modeCustomPopup: 'Show inside the widget',
   modeNewTab: 'Open in a new tab',
   centerMapOnClick: 'Center map on clicked point',
+  mapConnected: 'Connected to the selected map.',
+  mapNotConnected: 'No map selected yet — choose one above.',
   tosWarning: '⚠️ Embedding Street View alongside a third-party map may violate Google Maps Platform Terms of Service (§3.2.3 (e)). Use at your own risk.'
 }
