@@ -2,14 +2,11 @@ System.register([], function (_export) {return {execute: function () {_export({
   _widgetLabel: 'MnDOT Street View',
   title: 'MnDOT Street View',
   selectMap: 'Wählen Sie in den Widget-Einstellungen eine Karte aus.',
-  clickMap: 'Klicken Sie auf die Karte, um Street View zu öffnen.',
+  clickMap: 'Klicken Sie auf die Karte, um Straßenbilder anzuzeigen.',
   clickDisabled: 'Der Klick auf die Karte ist deaktiviert. Verwenden Sie die Schaltfläche, um ihn zu aktivieren.',
   lastPoint: 'Letzter Punkt',
   coords: 'WGS84-Koordinaten',
-  openStreetView: 'Street View öffnen',
-  openGoogleMaps: 'In Google Maps öffnen',
   close: 'Schließen',
-  noEmbedKey: 'Um Street View im Widget einzubetten, konfigurieren Sie einen Google Maps Embed API-Schlüssel.',
   activateClick: 'Klick auf Karte aktivieren',
   deactivateClick: 'Klick auf Karte deaktivieren',
   clearPoint: 'Punkt löschen',
@@ -17,7 +14,8 @@ System.register([], function (_export) {return {execute: function () {_export({
   modeCustomPopup: 'Im Widget anzeigen',
   modeNewTab: 'In neuem Tab öffnen',
   openMapillary: 'In Mapillary öffnen',
-  mapillaryLoading: 'Suche nach Mapillary-Bildern in der Nähe…',
-  mapillaryNotFound: 'Keine Mapillary-Bilder in der Nähe dieses Punkts gefunden.',
-  mapillaryError: 'Mapillary-Bilder konnten nicht geladen werden. Prüfen Sie das Zugriffstoken.'
+  imageLoading: 'Suche nach Mapillary-Bildern in der Nähe…',
+  imageNotFound: 'Keine Mapillary-Bilder in der Nähe dieses Punkts gefunden.',
+  imageError: 'Mapillary-Bilder konnten nicht geladen werden. Prüfen Sie das Zugriffstoken.',
+  noAccessToken: 'Fügen Sie in den Widget-Einstellungen ein Mapillary-Zugriffstoken hinzu, um hier Bilder anzuzeigen.'
 })}}});

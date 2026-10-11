@@ -2,14 +2,11 @@ System.register([], function (_export) {return {execute: function () {_export({
   _widgetLabel: 'MnDOT Street View',
   title: 'MnDOT Street View',
   selectMap: 'Seleccione un mapa en la configuración del widget.',
-  clickMap: 'Haga clic en el mapa para abrir Street View.',
+  clickMap: 'Haga clic en el mapa para ver imágenes a nivel de calle.',
   clickDisabled: 'El clic en el mapa está deshabilitado. Use el botón para habilitarlo.',
   lastPoint: 'Último punto',
   coords: 'Coordenadas WGS84',
-  openStreetView: 'Abrir Street View',
-  openGoogleMaps: 'Abrir en Google Maps',
   close: 'Cerrar',
-  noEmbedKey: 'Para incrustar Street View en el widget, configure una clave de Google Maps Embed API.',
   activateClick: 'Habilitar clic en el mapa',
   deactivateClick: 'Deshabilitar clic en el mapa',
   clearPoint: 'Limpiar punto',
@@ -17,7 +14,8 @@ System.register([], function (_export) {return {execute: function () {_export({
   modeCustomPopup: 'Mostrar en el widget',
   modeNewTab: 'Abrir en una nueva pestaña',
   openMapillary: 'Abrir en Mapillary',
-  mapillaryLoading: 'Buscando imágenes de Mapillary cercanas…',
-  mapillaryNotFound: 'No se encontraron imágenes de Mapillary cerca de este punto.',
-  mapillaryError: 'No se pudieron cargar las imágenes de Mapillary. Compruebe el token de acceso.'
+  imageLoading: 'Buscando imágenes de Mapillary cercanas…',
+  imageNotFound: 'No se encontraron imágenes de Mapillary cerca de este punto.',
+  imageError: 'No se pudieron cargar las imágenes de Mapillary. Compruebe el token de acceso.',
+  noAccessToken: 'Añada un token de acceso de Mapillary en la configuración del widget para mostrar imágenes aquí.'
 })}}});

@@ -21,14 +21,11 @@ export default {
   _widgetLabel: 'MnDOT Street View',
   title: 'MnDOT Street View',
   selectMap: 'Select a map in the widget settings.',
-  clickMap: 'Click on the map to open Street View.',
+  clickMap: 'Click on the map to view street-level imagery.',
   clickDisabled: 'Map click is disabled. Use the button to enable it.',
   lastPoint: 'Last point',
   coords: 'WGS84 coordinates',
-  openStreetView: 'Open Street View',
-  openGoogleMaps: 'Open in Google Maps',
   close: 'Close',
-  noEmbedKey: 'To embed Street View inside the widget, configure a Google Maps Embed API key.',
   activateClick: 'Enable map click',
   deactivateClick: 'Disable map click',
   clearPoint: 'Clear point',
@@ -36,7 +33,8 @@ export default {
   modeCustomPopup: 'Show inside the widget',
   modeNewTab: 'Open in a new tab',
   openMapillary: 'Open in Mapillary',
-  mapillaryLoading: 'Looking for nearby Mapillary imagery…',
-  mapillaryNotFound: 'No Mapillary imagery found near this point.',
-  mapillaryError: 'Could not load Mapillary imagery. Check the access token.'
+  imageLoading: 'Looking for nearby Mapillary imagery…',
+  imageNotFound: 'No Mapillary imagery found near this point.',
+  imageError: 'Could not load Mapillary imagery. Check the access token.',
+  noAccessToken: 'Add a Mapillary access token in the widget settings to show imagery here.'
 }

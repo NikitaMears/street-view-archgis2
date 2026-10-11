@@ -1,21 +1,15 @@
 System.register([], function (_export) {return {execute: function () {_export({
   mapSection: 'Mapa',
-  googleSection: 'Google',
   displaySection: 'Visualización',
   selectMap: 'Seleccionar widget de mapa',
   titleLabel: 'Título del widget',
-  apiKey: 'Google Maps Embed API key (opcional)',
-  openMode: 'Cómo abrir Street View',
+  openMode: 'Cómo mostrar las imágenes',
   modeCustomPopup: 'Mostrar en el widget',
   modeNewTab: 'Abrir en nueva pestaña',
   centerMapOnClick: 'Centrar el mapa en el punto pulsado',
   mapConnected: 'Conectado al mapa seleccionado.',
   mapNotConnected: 'Aún no se ha seleccionado ningún mapa; elija uno arriba.',
-  tosWarning: '⚠️ Incrustar Street View junto a un mapa de terceros puede infringir los Términos de Servicio de Google Maps Platform (§3.2.3 (e)). Úselo bajo su propia responsabilidad.',
   imagerySection: 'Imágenes de calle',
-  imagerySource: 'Fuente de imágenes',
-  sourceGoogle: 'Google Street View',
-  sourceMapillary: 'Mapillary (sin clave de Google)',
   mapillaryToken: 'Token de acceso de Mapillary',
   mapillaryTokenHint: 'Obtenga un client token gratuito en'
 })}}});

@@ -4,22 +4,23 @@ import { JimuMapViewComponent, type JimuMapView } from 'jimu-arcgis'
 import { Button } from 'jimu-ui'
 import Graphic from 'esri/Graphic'
 import * as webMercatorUtils from 'esri/geometry/support/webMercatorUtils'
-import type { IMConfig, ImagerySource } from '../config'
+import type { IMConfig } from '../config'
 import defaultMessages from './translations/default'
 import { getStyle } from './style'
+
+type ImageStatus = 'loading' | 'found' | 'not-found' | 'error'
 
 interface State {
   lat?: number
   lon?: number
-  streetViewUrl?: string
   customPopupOpen: boolean
   captureEnabled: boolean
-  mapillaryImageId?: string
-  mapillaryStatus?: 'loading' | 'found' | 'not-found' | 'error'
+  imageId?: string
+  imageStatus?: ImageStatus
 }
 
 /** How far (in degrees, about 50 m) to search around the clicked point for Mapillary images. */
-const MAPILLARY_SEARCH_RADIUS = 0.0005
+const SEARCH_RADIUS = 0.0005
 
 const MARKER_SYMBOL = {
   type: 'simple-marker',
@@ -31,26 +32,25 @@ const MARKER_SYMBOL = {
 
 const ignoreError = (): void => undefined
 
-const getStreetViewUrl = (lat: number, lon: number): string =>
-  `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(`${lat},${lon}`)}`
+/** Mapillary web app centered on a location (works without a token). */
+const getMapillaryMapUrl = (lat: number, lon: number): string =>
+  `https://www.mapillary.com/app/?lat=${lat}&lng=${lon}&z=17`
 
-const getEmbedUrl = (apiKey: string, lat: number, lon: number): string =>
-  `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(apiKey)}&location=${lat},${lon}`
+/** Mapillary web app opened on a specific image. */
+const getMapillaryImageUrl = (imageId: string): string =>
+  `https://www.mapillary.com/app/?pKey=${encodeURIComponent(imageId)}`
 
 const getMapillaryEmbedUrl = (imageId: string): string =>
   `https://www.mapillary.com/embed?image_key=${encodeURIComponent(imageId)}&style=photo`
 
-const getMapillaryAppUrl = (imageId: string): string =>
-  `https://www.mapillary.com/app/?pKey=${encodeURIComponent(imageId)}`
-
 /** Returns the id of the Mapillary image closest to lat/lon, or null if there is none nearby. */
-const findNearestMapillaryImage = async (
+const findNearestImage = async (
   accessToken: string,
   lat: number,
   lon: number,
   signal: AbortSignal
 ): Promise<string | null> => {
-  const r = MAPILLARY_SEARCH_RADIUS
+  const r = SEARCH_RADIUS
   const params = new URLSearchParams({
     access_token: accessToken,
     fields: 'id,computed_geometry,geometry',
@@ -97,7 +97,7 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
   private clickHandle: { remove: () => void } | null = null
   private markerGraphic: Graphic | null = null
   private markerView: __esri.View | null = null
-  private mapillaryRequest: AbortController | null = null
+  private imageRequest: AbortController | null = null
 
   // ---------- Lifecycle ----------
 
@@ -115,7 +115,7 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
   componentWillUnmount (): void {
     this.removeClickHandler()
     this.clearMarker()
-    this.mapillaryRequest?.abort()
+    this.imageRequest?.abort()
     this.jimuMapView = null
   }
 
@@ -125,21 +125,8 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
     return this.props.intl.formatMessage({ id, defaultMessage: defaultMessages[id] })
   }
 
-  private get apiKey (): string | undefined {
-    return this.props.config.googleEmbedApiKey?.trim() || undefined
-  }
-
-  private get imagerySource (): ImagerySource {
-    return this.props.config.imagerySource || 'google'
-  }
-
-  private get mapillaryToken (): string | undefined {
+  private get accessToken (): string | undefined {
     return this.props.config.mapillaryAccessToken?.trim() || undefined
-  }
-
-  /** True when the selected imagery source has the credentials needed to show imagery inside the widget. */
-  private get canEmbed (): boolean {
-    return this.imagerySource === 'mapillary' ? Boolean(this.mapillaryToken) : Boolean(this.apiKey)
   }
 
   private get centerMapOnClick (): boolean {
@@ -193,44 +180,36 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
 
     const lat = Number(wgs84Point.latitude.toFixed(6))
     const lon = Number(wgs84Point.longitude.toFixed(6))
-    const streetViewUrl = getStreetViewUrl(lat, lon)
-    const openMode = this.props.config.openMode || 'custom-popup'
-    const showInWidget = openMode === 'custom-popup'
+    const showInWidget = (this.props.config.openMode || 'custom-popup') === 'custom-popup'
+    const accessToken = this.accessToken
 
-    this.setState({
-      lat,
-      lon,
-      streetViewUrl,
-      customPopupOpen: showInWidget
-    })
+    this.setState({ lat, lon, customPopupOpen: showInWidget })
 
-    // Without credentials there is nothing to show inline, so open Google Maps.
-    if (openMode === 'new-tab' || !this.canEmbed) {
-      window.open(streetViewUrl, '_blank', 'noopener,noreferrer')
-    }
-
-    if (showInWidget && this.imagerySource === 'mapillary' && this.mapillaryToken) {
-      this.loadMapillaryImage(this.mapillaryToken, lat, lon)
+    if (showInWidget && accessToken) {
+      this.loadNearestImage(accessToken, lat, lon)
+    } else {
+      // New-tab mode, or no token to look up imagery: open the Mapillary web app instead.
+      window.open(getMapillaryMapUrl(lat, lon), '_blank', 'noopener,noreferrer')
     }
   }
 
-  private loadMapillaryImage (accessToken: string, lat: number, lon: number): void {
+  private loadNearestImage (accessToken: string, lat: number, lon: number): void {
     // Cancel the previous lookup so a slow response can't overwrite a newer click.
-    this.mapillaryRequest?.abort()
+    this.imageRequest?.abort()
     const request = new AbortController()
-    this.mapillaryRequest = request
+    this.imageRequest = request
 
-    this.setState({ mapillaryImageId: undefined, mapillaryStatus: 'loading' })
+    this.setState({ imageId: undefined, imageStatus: 'loading' })
 
-    findNearestMapillaryImage(accessToken, lat, lon, request.signal)
+    findNearestImage(accessToken, lat, lon, request.signal)
       .then((imageId) => {
         this.setState({
-          mapillaryImageId: imageId ?? undefined,
-          mapillaryStatus: imageId ? 'found' : 'not-found'
+          imageId: imageId ?? undefined,
+          imageStatus: imageId ? 'found' : 'not-found'
         })
       })
       .catch(() => {
-        if (!request.signal.aborted) this.setState({ mapillaryStatus: 'error' })
+        if (!request.signal.aborted) this.setState({ imageStatus: 'error' })
       })
   }
 
@@ -279,14 +258,13 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
 
   private readonly clearCurrentPoint = (): void => {
     this.clearMarker()
-    this.mapillaryRequest?.abort()
+    this.imageRequest?.abort()
     this.setState({
       lat: undefined,
       lon: undefined,
-      streetViewUrl: undefined,
       customPopupOpen: false,
-      mapillaryImageId: undefined,
-      mapillaryStatus: undefined
+      imageId: undefined,
+      imageStatus: undefined
     }, () => { this.forceRedraw() })
   }
 
@@ -301,9 +279,21 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
     return this.state.captureEnabled ? this.nls('clickMap') : this.nls('clickDisabled')
   }
 
+  private getStatusMessage (): string {
+    if (!this.accessToken) return this.nls('noAccessToken')
+
+    switch (this.state.imageStatus) {
+      case 'not-found': return this.nls('imageNotFound')
+      case 'error': return this.nls('imageError')
+      default: return this.nls('imageLoading')
+    }
+  }
+
   private renderPreview () {
-    const { customPopupOpen, lat, lon, streetViewUrl } = this.state
-    if (!customPopupOpen || lat == null || lon == null || streetViewUrl == null) return null
+    const { customPopupOpen, lat, lon, imageId, imageStatus } = this.state
+    if (!customPopupOpen || lat == null || lon == null) return null
+
+    const foundImageId = imageStatus === 'found' ? imageId : undefined
 
     return (
       <div className="widget-street-view__preview-area">
@@ -312,81 +302,30 @@ export default class Widget extends React.PureComponent<AllWidgetProps<IMConfig>
             <strong>{this.nls('coords')}:</strong> {lat}, {lon}
           </div>
 
-          {this.imagerySource === 'mapillary'
-            ? this.renderMapillaryPreview(streetViewUrl)
-            : this.renderGooglePreview(lat, lon, streetViewUrl)}
+          {foundImageId
+            ? (
+              <div className="widget-street-view__iframe-wrapper">
+                <iframe
+                  className="widget-street-view__iframe"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                  src={getMapillaryEmbedUrl(foundImageId)}
+                />
+              </div>
+              )
+            : <div className="widget-street-view__message">{this.getStatusMessage()}</div>}
+
+          <div className="widget-street-view__actions">
+            <a
+              href={foundImageId ? getMapillaryImageUrl(foundImageId) : getMapillaryMapUrl(lat, lon)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {this.nls('openMapillary')}
+            </a>
+          </div>
         </div>
-      </div>
-    )
-  }
-
-  private renderGooglePreview (lat: number, lon: number, streetViewUrl: string) {
-    const apiKey = this.apiKey
-
-    return (
-      <React.Fragment>
-        {apiKey && this.renderIframe(getEmbedUrl(apiKey, lat, lon))}
-        {this.renderLinks([
-          { href: streetViewUrl, label: apiKey ? this.nls('openGoogleMaps') : this.nls('openStreetView') }
-        ])}
-      </React.Fragment>
-    )
-  }
-
-  private renderMapillaryPreview (streetViewUrl: string) {
-    const { mapillaryImageId, mapillaryStatus } = this.state
-    const googleLink = { href: streetViewUrl, label: this.nls('openGoogleMaps') }
-
-    if (!this.mapillaryToken) {
-      return this.renderLinks([googleLink])
-    }
-
-    if (mapillaryStatus === 'found' && mapillaryImageId) {
-      return (
-        <React.Fragment>
-          {this.renderIframe(getMapillaryEmbedUrl(mapillaryImageId))}
-          {this.renderLinks([
-            { href: getMapillaryAppUrl(mapillaryImageId), label: this.nls('openMapillary') },
-            googleLink
-          ])}
-        </React.Fragment>
-      )
-    }
-
-    const messages = {
-      loading: this.nls('mapillaryLoading'),
-      'not-found': this.nls('mapillaryNotFound'),
-      error: this.nls('mapillaryError')
-    }
-
-    return (
-      <React.Fragment>
-        <div className="widget-street-view__message">{messages[mapillaryStatus ?? 'loading']}</div>
-        {this.renderLinks([googleLink])}
-      </React.Fragment>
-    )
-  }
-
-  private renderIframe (src: string) {
-    return (
-      <div className="widget-street-view__iframe-wrapper">
-        <iframe
-          className="widget-street-view__iframe"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          allowFullScreen
-          src={src}
-        />
-      </div>
-    )
-  }
-
-  private renderLinks (links: Array<{ href: string, label: string }>) {
-    return (
-      <div className="widget-street-view__actions">
-        {links.map(({ href, label }) => (
-          <a key={href} href={href} target="_blank" rel="noopener noreferrer">{label}</a>
-        ))}
       </div>
     )
   }

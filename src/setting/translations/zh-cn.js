@@ -1,21 +1,15 @@
 System.register([], function (_export) {return {execute: function () {_export({
   mapSection: '地图',
-  googleSection: 'Google',
   displaySection: '显示',
   selectMap: '选择地图微件',
   titleLabel: '微件标题',
-  apiKey: 'Google Maps Embed API key（可选）',
-  openMode: 'Street View 打开方式',
+  openMode: '影像显示方式',
   modeCustomPopup: '在微件中显示',
   modeNewTab: '在新标签页中打开',
   centerMapOnClick: '将地图居中到点击位置',
   mapConnected: '已连接到所选地图。',
   mapNotConnected: '尚未选择地图，请在上方选择。',
-  tosWarning: '⚠️ 在第三方地图旁嵌入 Street View 可能违反 Google Maps Platform 服务条款（§3.2.3 (e)）。使用风险自负。',
   imagerySection: '街景影像',
-  imagerySource: '影像来源',
-  sourceGoogle: 'Google 街景',
-  sourceMapillary: 'Mapillary（无需 Google 密钥）',
   mapillaryToken: 'Mapillary 访问令牌',
   mapillaryTokenHint: '免费获取客户端令牌：'
 })}}});

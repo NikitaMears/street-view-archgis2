@@ -2,14 +2,11 @@ System.register([], function (_export) {return {execute: function () {_export({
   _widgetLabel: 'MnDOT 街景',
   title: 'MnDOT 街景',
   selectMap: '请在微件设置中选择地图。',
-  clickMap: '单击地图以打开街景。',
+  clickMap: '单击地图以查看街景影像。',
   clickDisabled: '地图单击已禁用。请使用按钮启用。',
   lastPoint: '最后一个点',
   coords: 'WGS84 坐标',
-  openStreetView: '打开街景',
-  openGoogleMaps: '在 Google 地图中打开',
   close: '关闭',
-  noEmbedKey: '若要在微件中嵌入街景，请配置 Google Maps Embed API key。',
   activateClick: '启用地图单击',
   deactivateClick: '禁用地图单击',
   clearPoint: '清除点位',
@@ -17,7 +14,8 @@ System.register([], function (_export) {return {execute: function () {_export({
   modeCustomPopup: '在微件中显示',
   modeNewTab: '在新标签页中打开',
   openMapillary: '在 Mapillary 中打开',
-  mapillaryLoading: '正在查找附近的 Mapillary 影像…',
-  mapillaryNotFound: '此点附近未找到 Mapillary 影像。',
-  mapillaryError: '无法加载 Mapillary 影像。请检查访问令牌。'
+  imageLoading: '正在查找附近的 Mapillary 影像…',
+  imageNotFound: '此点附近未找到 Mapillary 影像。',
+  imageError: '无法加载 Mapillary 影像。请检查访问令牌。',
+  noAccessToken: '请在微件设置中添加 Mapillary 访问令牌以在此处显示影像。'
 })}}});
